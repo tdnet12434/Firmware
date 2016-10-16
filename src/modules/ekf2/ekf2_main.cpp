@@ -274,6 +274,9 @@ private:
 	// airspeed mode parameter
 	control::BlockParamInt _airspeed_mode;
 
+	// temporary testing param
+	control::BlockParamInt _reset_trigger;
+
 	int update_subscriptions();
 
 };
@@ -370,7 +373,8 @@ Ekf2::Ekf2():
 	_gyr_bias_init(this, "EKF2_GBIAS_INIT", false, &_params->switch_on_gyro_bias),
 	_acc_bias_init(this, "EKF2_ABIAS_INIT", false, &_params->switch_on_accel_bias),
 	_ang_err_init(this, "EKF2_ANGERR_INIT", false, &_params->initial_tilt_err),
-	_airspeed_mode(this, "FW_ARSP_MODE", false)
+	_airspeed_mode(this, "FW_ARSP_MODE", false),
+	_reset_trigger(this, "EKF2_TRIG_MODE", false)
 {
 
 }
@@ -497,6 +501,15 @@ void Ekf2::task_main()
 
 		if (vision_position_updated) {
 			orb_copy(ORB_ID(vision_position_estimate), _ev_pos_sub, &ev);
+		}
+
+		// temporary hack for testing resets
+		if (_reset_trigger.get() == 1) {
+			sensors.baro_alt_meter -= 20.0f;
+
+		} else if (_reset_trigger.get() == 2) {
+			gps.lat += 10000000;	// add insane offset to positon, good luck!
+			gps.lon += 10000000;
 		}
 
 		// in replay mode we are getting the actual timestamp from the sensor topic
