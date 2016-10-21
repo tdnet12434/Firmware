@@ -1098,8 +1098,8 @@ protected:
 			msg.lat = gps.lat;
 			msg.lon = gps.lon;
 			msg.alt = gps.alt;
-			msg.eph = gps.hdop * 100; //cm_uint16_from_m_float(gps.eph);
-			msg.epv = gps.vdop * 100; //cm_uint16_from_m_float(gps.epv);
+			msg.eph = /*gps.hdop * 100; //*/cm_uint16_from_m_float(gps.eph);//thanabadee edited
+			msg.epv = /*gps.vdop * 100; //*/cm_uint16_from_m_float(gps.s_variance_m_s); //thanabadee edited
 			msg.vel = cm_uint16_from_m_float(gps.vel_m_s),
 			    msg.cog = _wrap_2pi(gps.cog_rad) * M_RAD_TO_DEG_F * 1e2f,
 				msg.satellites_visible = gps.satellites_used;

@@ -214,7 +214,12 @@ void tune_positive(bool use_buzzer)
 		set_tune(TONE_NOTIFY_POSITIVE_TUNE);
 	}
 }
-
+void tune_slam_available()
+{
+	blink_msg_end = hrt_absolute_time() + BLINK_MSG_TIME;
+	rgbled_set_color(RGBLED_COLOR_YELLOW);
+	rgbled_set_mode(RGBLED_MODE_BLINK_FAST);
+}
 /**
  * Blink white LED and play neutral tune (if use_buzzer == true).
  */

@@ -114,6 +114,7 @@
 #include <uORB/topics/vehicle_gps_position.h>
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
+#include <uORB/topics/vision_speed_estimate.h>
 #include <uORB/topics/vtol_vehicle_status.h>
 
 typedef enum VEHICLE_MODE_FLAG
@@ -1449,6 +1450,11 @@ int commander_thread_main(int argc, char *argv[])
 	struct geofence_result_s geofence_result;
 	memset(&geofence_result, 0, sizeof(geofence_result));
 
+	/* Subscribe to VISION_VELOCITY topic */
+	int vis_vel_sub = orb_subscribe(ORB_ID(vision_speed_estimate));
+	struct vision_speed_estimate_s vision_velocity_data;
+	memset(&vision_velocity_data, 0, sizeof(vision_velocity_data));
+
 	/* Subscribe to manual control data */
 	int sp_man_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 	memset(&sp_man, 0, sizeof(sp_man));
@@ -2313,6 +2319,31 @@ int commander_thread_main(int argc, char *argv[])
 				mavlink_log_critical(&mavlink_log_pub, "GPS fix lost");
 			}
 		}
+
+
+		/*
+		Check for valid vision information.
+		*/
+		orb_check(vis_vel_sub, &updated);
+		static uint8_t count_vis = 0;
+		static unsigned long last_vis_time = 0;
+		if (updated) {
+			orb_copy(ORB_ID(vision_speed_estimate), vis_vel_sub, &vision_velocity_data);
+		}
+		if(last_vis_time==0) last_vis_time=vision_velocity_data.timestamp_received;
+		if(last_vis_time!=vision_velocity_data.timestamp_received && vision_velocity_data.x >= 2 && vision_velocity_data.x <3) {
+			if(count_vis>200) {
+				tune_slam_available();
+				last_vis_time=vision_velocity_data.timestamp_received;
+				count_vis=0;
+			}else{
+				count_vis++;
+			}
+		}
+
+
+
+
 
 		/* start mission result check */
 		orb_check(mission_result_sub, &updated);
