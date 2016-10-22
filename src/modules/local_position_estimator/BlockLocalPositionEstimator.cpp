@@ -187,7 +187,7 @@ BlockLocalPositionEstimator::BlockLocalPositionEstimator() :
 	_err_perf(),
 
 	// kf matrices
-	_x(), _u(), _P(), _R_att(), _eul()
+	_x(), _u(), _P(), _R_att(), _eul(), _A(), _B(), _R(), _Q()
 {
 	// assign distance subs to array
 	_dist_subs[0] = &_sub_dist0;
