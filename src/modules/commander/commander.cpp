@@ -2323,6 +2323,9 @@ int commander_thread_main(int argc, char *argv[])
 
 		/*
 		Check for valid vision information.
+		1.5 -> slam initing
+		2.5 -> slam tracking
+		0.5 -> slam lost
 		*/
 		orb_check(vis_vel_sub, &updated);
 		static uint8_t count_vis = 0;
@@ -2331,13 +2334,23 @@ int commander_thread_main(int argc, char *argv[])
 			orb_copy(ORB_ID(vision_speed_estimate), vis_vel_sub, &vision_velocity_data);
 		}
 		if(last_vis_time==0) last_vis_time=vision_velocity_data.timestamp_received;
-		if(last_vis_time!=vision_velocity_data.timestamp_received && vision_velocity_data.x >= 2 && vision_velocity_data.x <3) {
-			if(count_vis>200) {
-				tune_slam_available();
-				last_vis_time=vision_velocity_data.timestamp_received;
-				count_vis=0;
-			}else{
-				count_vis++;
+		if(last_vis_time!=vision_velocity_data.timestamp_received) {
+			if(vision_velocity_data.x >= 2 && vision_velocity_data.x <3) {
+				if(count_vis>200) {
+					tune_slam_available();
+					last_vis_time=vision_velocity_data.timestamp_received;
+					count_vis=0;
+				}else{
+					count_vis++;
+				}
+			}else if(vision_velocity_data.x >= 1 && vision_velocity_data.x <2){
+				if(count_vis>50) {
+					tune_slam_initing();
+					last_vis_time=vision_velocity_data.timestamp_received;
+					count_vis=0;
+				}else{
+					count_vis++;
+				}
 			}
 		}
 

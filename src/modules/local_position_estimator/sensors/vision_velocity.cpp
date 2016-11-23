@@ -55,46 +55,46 @@ void BlockLocalPositionEstimator::visionVelocityCorrect()
  
     if (visionVelocityMeasure(y) != OK) { return; }
  
-    // vision velocity measurement matrix, measures position
-    Matrix<float, n_y_vision_vel, n_x> C;
-    C.setZero();
-    C(Y_vision_vel_vx, X_vx) = 1;
-    C(Y_vision_vel_vy, X_vy) = 1;
-    C(Y_vision_vel_vz, X_vz) = 1;
+    // // vision velocity measurement matrix, measures position
+    // Matrix<float, n_y_vision_vel, n_x> C;
+    // C.setZero();
+    // C(Y_vision_vel_vx, X_vx) = 1;
+    // C(Y_vision_vel_vy, X_vy) = 1;
+    // C(Y_vision_vel_vz, X_vz) = 1;
  
-    // noise matrix
-    Matrix<float, n_y_vision_vel, n_y_vision_vel> R;
-    R.setZero();
-    R(Y_vision_vel_vx, Y_vision_vel_vx) = _vision_vxy_stddev.get() * _vision_vxy_stddev.get();
-    R(Y_vision_vel_vy, Y_vision_vel_vy) = _vision_vxy_stddev.get() * _vision_vxy_stddev.get();
-    R(Y_vision_vel_vz, Y_vision_vel_vz) = _vision_vz_stddev.get() * _vision_vz_stddev.get();
+    // // noise matrix
+    // Matrix<float, n_y_vision_vel, n_y_vision_vel> R;
+    // R.setZero();
+    // R(Y_vision_vel_vx, Y_vision_vel_vx) = _vision_vxy_stddev.get() * _vision_vxy_stddev.get();
+    // R(Y_vision_vel_vy, Y_vision_vel_vy) = _vision_vxy_stddev.get() * _vision_vxy_stddev.get();
+    // R(Y_vision_vel_vz, Y_vision_vel_vz) = _vision_vz_stddev.get() * _vision_vz_stddev.get();
  
-    // residual
-    Matrix<float, n_y_vision_vel, n_y_vision_vel> S_I = inv<float, n_y_vision>((C * _P * C.transpose()) + R);
-    Matrix<float, n_y_vision_vel, 1> r = y - C * _x;
+    // // residual
+    // Matrix<float, n_y_vision_vel, n_y_vision_vel> S_I = inv<float, n_y_vision>((C * _P * C.transpose()) + R);
+    // Matrix<float, n_y_vision_vel, 1> r = y - C * _x;
  
-    // fault detection
-    float beta = (r.transpose() * (S_I * r))(0, 0);
+    // // fault detection
+    // float beta = (r.transpose() * (S_I * r))(0, 0);
  
-    if (beta > BETA_TABLE[n_y_vision_vel]) {
-        if (_visionVelocityFault < FAULT_MINOR) {
-            //mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] vision velocity fault, beta %5.2f", double(beta));
-            _visionVelocityFault = FAULT_MINOR;
-        }
+    // if (beta > BETA_TABLE[n_y_vision_vel]) {
+    //     if (_visionVelocityFault < FAULT_MINOR) {
+    //         //mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] vision velocity fault, beta %5.2f", double(beta));
+    //         _visionVelocityFault = FAULT_MINOR;
+    //     }
  
-    } else if (_visionVelocityFault) {
-        _visionVelocityFault = FAULT_NONE;
-        //mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] vision velocity OK");
-    }
+    // } else if (_visionVelocityFault) {
+    //     _visionVelocityFault = FAULT_NONE;
+    //     //mavlink_and_console_log_info(&mavlink_log_pub, "[lpe] vision velocity OK");
+    // }
  
-    // kalman filter correction if no fault
-    if (_visionVelocityFault <  fault_lvl_disable) {
-        Matrix<float, n_x, n_y_vision_vel> K = _P * C.transpose() * S_I;
-        Vector<float, n_x> dx = K * r;
-        correctionLogic(dx);
-        _x += dx;
-        _P -= K * C * _P;
-    }
+    // // kalman filter correction if no fault
+    // if (_visionVelocityFault <  fault_lvl_disable) {
+    //     Matrix<float, n_x, n_y_vision_vel> K = _P * C.transpose() * S_I;
+    //     Vector<float, n_x> dx = K * r;
+    //     correctionLogic(dx);
+    //     _x += dx;
+    //     _P -= K * C * _P;
+    // }
 }
  
 void BlockLocalPositionEstimator::visionVelocityCheckTimeout()

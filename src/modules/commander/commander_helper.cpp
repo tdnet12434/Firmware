@@ -220,6 +220,12 @@ void tune_slam_available()
 	rgbled_set_color(RGBLED_COLOR_YELLOW);
 	rgbled_set_mode(RGBLED_MODE_BLINK_FAST);
 }
+void tune_slam_initing()
+{
+	blink_msg_end = hrt_absolute_time() + BLINK_MSG_TIME;
+	rgbled_set_color(RGBLED_COLOR_WHITE);
+	rgbled_set_mode(RGBLED_MODE_BLINK_FAST);
+}
 /**
  * Blink white LED and play neutral tune (if use_buzzer == true).
  */
