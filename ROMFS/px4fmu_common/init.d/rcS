@@ -179,16 +179,6 @@ then
 		set USE_IO no
 	fi
 
-
-	# should set to 0.8 for mindpx-v2 borad.
-	if param compare INAV_LIDAR_ERR 0.5
-	then
-		if ver hwcmp MINDPX_V2
-		then
-			param set INAV_LIDAR_ERR 0.8
-		fi
-	fi
-
 	#
 	# Set parameters and env variables for selected AUTOSTART
 	#
@@ -367,6 +357,20 @@ then
 		set OUTPUT_MODE uavcan_esc
 	fi
 
+	# Sensors on the PWM interface bank
+	# clear pins 5 and 6
+	if param compare SENS_EN_LL40LS 1
+	then
+		set FMU_MODE pwm4
+		set AUX_MODE pwm4
+	fi
+	if param greater TRIG_MODE 0
+	then
+		set FMU_MODE pwm4
+		set AUX_MODE pwm4
+		camera_trigger start
+	fi
+
 	# If OUTPUT_MODE == none then something is wrong with setup and we shouldn't try to enable output
 	if [ $OUTPUT_MODE != none ]
 	then
@@ -374,8 +378,8 @@ then
 		then
 			if param compare UAVCAN_ENABLE 0
 			then
-				echo "OVERRIDING UAVCAN_ENABLE = 1" >> $LOG_FILE
-				param set UAVCAN_ENABLE 1
+				echo "OVERRIDING UAVCAN_ENABLE = 3" >> $LOG_FILE
+				param set UAVCAN_ENABLE 3
 			fi
 		fi
 
@@ -567,34 +571,13 @@ then
 		then
 			mavlink start -d /dev/ttyS2 -b 921600 -r 20000
 		fi
-		# Sensors on the PWM interface bank
-		# clear pins 5 and 6
-		if param compare SENS_EN_LL40LS 1
-		then
-			set FMU_MODE pwm4
-			set AUX_MODE pwm4
-		fi
-		if param greater TRIG_MODE 0
-		then
-			set FMU_MODE pwm4
-			set AUX_MODE pwm4
-			camera_trigger start
-		fi
 	fi
+
 
 	#
 	# Starting stuff according to UAVCAN_ENABLE value
 	#
 	if param greater UAVCAN_ENABLE 0
-	then
-		if uavcan start
-		then
-		else
-			tone_alarm $TUNE_ERR
-		fi
-	fi
-
-	if param greater UAVCAN_ENABLE 1
 	then
 		if uavcan start fw
 		then
@@ -641,7 +624,18 @@ then
 		frsky_telemetry start -d /dev/ttyS6
 	fi
 
+	if ver hwcmp MINDPX_V2
+	then
+		frsky_telemetry start -d /dev/ttyS6
+	fi
+
 	if ver hwcmp PX4FMU_V2
+	then
+		# Check for flow sensor - as it is a background task, launch it last
+		px4flow start &
+	fi
+
+	if ver hwcmp PX4FMU_V4
 	then
 		# Check for flow sensor - as it is a background task, launch it last
 		px4flow start &
@@ -649,7 +643,6 @@ then
 
 	if ver hwcmp MINDPX_V2
 	then
-		#mindxp also need flow
 		px4flow start &
 	fi
 
@@ -665,30 +658,34 @@ then
 		then
 		fi
 	else
-		# check if we should increase logging rate for ekf2 replay message logging
-		if param greater EKF2_REC_RPL 0
+		if param compare SYS_LOGGER 0
 		then
-			if param compare SYS_LOGGER 0
+			# check if we should increase logging rate for ekf2 replay message logging
+			if param greater EKF2_REC_RPL 0
 			then
 				if sdlog2 start -r 500 -e -b 18 -t
 				then
 				fi
 			else
-				if logger start -r 500
+				if sdlog2 start -r 100 -a -b 9 -t
 				then
 				fi
 			fi
 		else
-			if param compare SYS_LOGGER 0
+			set LOGGER_ARGS ""
+			if param compare SDLOG_MODE 1
 			then
-				if sdlog2 start -r 100 -a -b 9 -t
-				then
-				fi
-			else
-				if logger start -b 12 -t
-				then
-				fi
+				set LOGGER_ARGS "-e"
 			fi
+			if param compare SDLOG_MODE 2
+			then
+				set LOGGER_ARGS "-f"
+			fi
+
+			if logger start -b 12 -t $LOGGER_ARGS
+			then
+			fi
+			unset LOGGER_ARGS
 		fi
 	fi
 

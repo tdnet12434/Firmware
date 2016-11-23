@@ -1279,8 +1279,8 @@ PX4FMU::cycle()
 
 #ifdef RC_SERIAL_PORT
 	// This block scans for a supported serial RC input and locks onto the first one found
-	// Scan for 100 msec, then switch protocol
-	constexpr hrt_abstime rc_scan_max = 100 * 1000;
+	// Scan for 300 msec, then switch protocol
+	constexpr hrt_abstime rc_scan_max = 300 * 1000;
 
 	bool sbus_failsafe, sbus_frame_drop;
 	uint16_t raw_rc_values[input_rc_s::RC_INPUT_MAX_CHANNELS];
@@ -1415,6 +1415,7 @@ PX4FMU::cycle()
 			if (newBytes > 0) {
 				// parse new data
 				uint8_t sumd_rssi, rx_count;
+				bool sumd_failsafe;
 
 				rc_updated = false;
 
@@ -1422,14 +1423,14 @@ PX4FMU::cycle()
 					/* set updated flag if one complete packet was parsed */
 					sumd_rssi = RC_INPUT_RSSI_MAX;
 					rc_updated = (OK == sumd_decode(_rcs_buf[i], &sumd_rssi, &rx_count,
-									&raw_rc_count, raw_rc_values, input_rc_s::RC_INPUT_MAX_CHANNELS));
+									&raw_rc_count, raw_rc_values, input_rc_s::RC_INPUT_MAX_CHANNELS, &sumd_failsafe));
 				}
 
 				if (rc_updated) {
 					// we have a new SUMD frame. Publish it.
 					_rc_in.input_source = input_rc_s::RC_INPUT_SOURCE_PX4FMU_SUMD;
 					fill_rc_in(raw_rc_count, raw_rc_values, _cycle_timestamp,
-						   false, false, frame_drops, sumd_rssi);
+						   false, sumd_failsafe, frame_drops, sumd_rssi);
 					_rc_scan_locked = true;
 				}
 			}
@@ -3130,9 +3131,9 @@ fmu_main(int argc, char *argv[])
 
 	} else if (!strcmp(verb, "mode_pwm1")) {
 		new_mode = PORT_PWM1;
+#endif
 
-
-#elif defined(BOARD_HAS_PWM) && BOARD_HAS_PWM >= 6
+#if defined(BOARD_HAS_PWM) && BOARD_HAS_PWM >= 6
 
 
 	} else if (!strcmp(verb, "mode_pwm4")) {

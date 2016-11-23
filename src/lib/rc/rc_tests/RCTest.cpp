@@ -48,12 +48,12 @@ bool RCTest::run_tests(void)
 
 bool RCTest::dsmTest10Ch()
 {
-	return dsmTest(TEST_DATA_PATH "dsm_x_data.txt", 10, 6, 0);
+	return dsmTest(TEST_DATA_PATH "dsm_x_data.txt", 10, 6, 1500);
 }
 
 bool RCTest::dsmTest12Ch()
 {
-	return dsmTest(TEST_DATA_PATH "dsm_x_dx9_data.txt", 12, 11, 1500);
+	return dsmTest(TEST_DATA_PATH "dsm_x_dx9_data.txt", 12, 6, 1500);
 }
 
 bool RCTest::dsmTest(const char *filepath, unsigned expected_chancount, unsigned expected_dropcount, unsigned chan0)
@@ -76,7 +76,7 @@ bool RCTest::dsmTest(const char *filepath, unsigned expected_chancount, unsigned
 	}
 
 	// Init the parser
-	uint8_t frame[20];
+	uint8_t frame[30];
 	uint16_t rc_values[18];
 	uint16_t num_values;
 	bool dsm_11_bit;
@@ -85,6 +85,8 @@ bool RCTest::dsmTest(const char *filepath, unsigned expected_chancount, unsigned
 
 	int rate_limiter = 0;
 	unsigned last_drop = 0;
+
+	dsm_proto_init();
 
 	while (EOF != (ret = fscanf(fp, "%f,%x,,", &f, &x))) {
 
@@ -100,9 +102,7 @@ bool RCTest::dsmTest(const char *filepath, unsigned expected_chancount, unsigned
 		if (result) {
 			ut_test(num_values == expected_chancount);
 
-			if (chan0 > 0) {
-				ut_test((chan0 - rc_values[0]) < 3);
-			}
+			ut_test(abs((int)chan0 - (int)rc_values[0]) < 30);
 
 			//PX4_INFO("decoded packet with %d channels and %s encoding:", num_values, (dsm_11_bit) ? "11 bit" : "10 bit");
 
@@ -112,7 +112,7 @@ bool RCTest::dsmTest(const char *filepath, unsigned expected_chancount, unsigned
 		}
 
 		if (last_drop != (dsm_frame_drops)) {
-			//PX4_INFO("frame dropped, now #%d", (dsm_frame_drops));
+			PX4_INFO("frame dropped, now #%d", (dsm_frame_drops));
 			last_drop = dsm_frame_drops;
 		}
 
@@ -302,9 +302,10 @@ bool RCTest::sumdTest(void)
 		uint8_t rx_count;
 		uint16_t channel_count;
 		uint16_t channels[32];
+		bool sumd_failsafe;
 
 
-		if (!sumd_decode(b, &rssi, &rx_count, &channel_count, channels, 32)) {
+		if (!sumd_decode(b, &rssi, &rx_count, &channel_count, channels, 32, &sumd_failsafe)) {
 			//PX4_INFO("decoded: %u channels (converted to PPM range)", (unsigned)channel_count);
 
 			for (unsigned i = 0; i < channel_count; i++) {
